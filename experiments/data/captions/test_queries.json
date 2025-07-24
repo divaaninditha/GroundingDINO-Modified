@@ -1,0 +1,53 @@
+{
+  "single_objects": [
+    "person",
+    "people",
+    "car",
+    "truck",
+    "bus",
+    "motorcycle",
+    "bicycle",
+    "airplane",
+    "boat",
+    "train",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe"
+  ],
+  "complex_queries": [
+    "person with bag",
+    "person holding phone",
+    "person using laptop",
+    "person sitting on chair",
+    "person riding motorcycle",
+    "person driving car",
+    "car and motorcycle",
+    "car and bicycle",
+    "laptop and phone",
+    "cup and bottle",
+    "chair and table",
+    "cat and dog",
+    "food on table",
+    "laptop on table",
+    "bag on chair"
+  ],
+  "natural_queries": [
+    "a person sitting on a chair",
+    "a car parked on the street",
+    "a laptop computer on the desk",
+    "a phone in someone's hand",
+    "food served on a plate",
+    "a bag hanging on the chair",
+    "two people talking",
+    "a cat sleeping on the bed",
+    "a bottle of water",
+    "a cup of coffee"
+  ]
+}

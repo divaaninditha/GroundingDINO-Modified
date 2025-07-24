@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Model Predictions Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            image-rendering: optimizeQuality;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .upload-section {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .file-input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .file-input-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+        
+        .file-input-card:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+        
+        .file-input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+        }
+        
+        .model-selector {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .model-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .model-tab {
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            font-weight: 500;
+        }
+        
+        .model-tab:hover {
+            background: #e9ecef;
+        }
+        
+        .model-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .model-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .control-panel {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 25px;
+            margin-bottom: 30px;
+            min-height: 700px;
+        }
+        
+        .image-list-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 700px;
+        }
+        
+        .image-list-panel h3 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .search-box:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .image-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .image-item:hover {
+            background: #e9ecef;
+            border-left-color: #667eea;
+            transform: translateX(5px);
+        }
+        
+        .image-item.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-left-color: white;
+        }
+        
+        .image-icon {
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .image-viewer {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .image-container {
+            position: relative;
+            width: 100%;
+            height: 660px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimizeQuality;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .main-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            -ms-interpolation-mode: nearest-neighbor;
+            image-rendering: optimizeQuality;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+        
+        .placeholder {
+            text-align: center;
+            color: #666;
+            font-size: 1.2em;
+        }
+        
+        .bounding-box {
+            position: absolute;
+            border: 2px solid;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            pointer-events: none;
+            transition: none;
+            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0, 0, 0);
+            image-rendering: pixelated;
+            shape-rendering: crispEdges;
+            will-change: auto;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            outline: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .bounding-box:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-width: 3px;
+        }
+        
+        .box-label {
+            position: absolute;
+            top: -26px;
+            left: -1px;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            transform: translate3d(0, 0, 0);
+            line-height: 1.2;
+            letter-spacing: 0.3px;
+        }
+        
+        .prediction-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 700px;
+        }
+        
+        .prediction-panel h3 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .prediction-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+        
+        .prediction-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .prediction-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .prediction-score {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .prediction-coords {
+            font-size: 0.8em;
+            color: #888;
+            font-family: monospace;
+            margin-top: 5px;
+        }
+        
+        .caption-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .caption-display h4 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .caption-text {
+            font-style: italic;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .success {
+            background: #51cf66;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .comparison-mode {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .confidence-bar {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcf7f);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        /* Color schemes for different models */
+        .color-english { border-left-color: #FF6B6B; }
+        .color-indonesian { border-left-color: #4ECDC4; }
+        .color-indo-grounding { border-left-color: #45B7D1; }
+        
+        .model-english .bounding-box { border-color: #FF6B6B; }
+        .model-indonesian .bounding-box { border-color: #4ECDC4; }
+        .model-indo-grounding .bounding-box { border-color: #45B7D1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 OBJECT DETECTION WITH GROUNDING DINO: SWIN-T AND INDOBERT FOR INDONESIAN TEXT-IMAGE MATCHING</h1>
+            <p>Hasil Prediksi dari Berbagai Model GroundingDINO</p>
+        </div>
+        
+        <div class="upload-section">
+            <h2>📁 Upload Data Files</h2>
+            <p>Upload file prediksi JSON dan folder images</p>
+            
+            <div class="file-input-group">
+                <div class="file-input-card">
+                    <h3>🤖 English Model</h3>
+                    <input type="file" id="englishFile" class="file-input" accept=".json" />
+                    <p style="margin-top: 10px; font-size: 0.9em;">english/predictions.json</p>
+                </div>
+                
+                <div class="file-input-card">
+                    <h3>🇮🇩 Indonesian Model</h3>
+                    <input type="file" id="indonesianFile" class="file-input" accept=".json" />
+                    <p style="margin-top: 10px; font-size: 0.9em;">indonesian/predictions.json</p>
+                </div>
+                
+                <div class="file-input-card">
+                    <h3>🎯 IndoGroundingDINO</h3>
+                    <input type="file" id="indoGroundingFile" class="file-input" accept=".json" />
+                    <p style="margin-top: 10px; font-size: 0.9em;">indo_groundingdino/predictions.json</p>
+                </div>
+                
+                <div class="file-input-card">
+                    <h3>🖼️ Images Folder</h3>
+                    <input type="file" id="imagesFolder" class="file-input" webkitdirectory multiple />
+                    <p style="margin-top: 10px; font-size: 0.9em;">experiments/data/images/</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="modelSelector" class="model-selector" style="display: none;">
+            <h3>🎛️ Model Selection & Comparison</h3>
+            <div class="model-tabs" id="modelTabs"></div>
+            <div class="model-info" id="modelInfo"></div>
+        </div>
+        
+        <div id="loadingMessage" class="loading" style="display: none;">
+            <div>⏳ Loading predictions and images...</div>
+        </div>
+        
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div id="successMessage" class="success" style="display: none;"></div>
+        
+        <div id="mainInterface" class="control-panel" style="display: none;">
+            <div class="image-list-panel">
+                <h3>📂 Dataset Images</h3>
+                <input type="text" id="searchBox" class="search-box" placeholder="🔍 Search images..." />
+                <div id="imageStats" class="stats-card">
+                    <h4>📊 Dataset Stats</h4>
+                    <div>Total Images: <span id="totalImages">0</span></div>
+                    <div>With Predictions: <span id="predictedImages">0</span></div>
+                </div>
+                <div id="imageList"></div>
+            </div>
+            
+            <div class="image-viewer">
+                <div class="image-container" id="imageContainer">
+                    <div class="placeholder">
+                        <div style="font-size: 4em; margin-bottom: 20px;">🖼️</div>
+                        <div>Select an image from the list to view predictions</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prediction-panel">
+                <h3>🎯 Predictions</h3>
+                
+                <div id="captionDisplay" class="caption-display" style="display: none;">
+                    <h4>📝 Prompt</h4>
+                    <div class="caption-text" id="captionText"></div>
+                </div>
+                
+                <div id="predictionStats" class="stats-card">
+                    <h4>📊 Current Predictions</h4>
+                    <div>Detections: <span id="currentDetections">0</span></div>
+                    <div>Avg Confidence: <span id="avgConfidence">0%</span></div>
+                    <div>Coord Format: <span id="coordFormat">-</span></div>
+                </div>
+                
+                <div class="debug-panel" style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="checkbox" id="debugMode" style="margin: 0;">
+                        <span style="font-size: 0.9em;">🐛 Debug Mode (Check console)</span>
+                    </label>
+                </div>
+                
+                <div id="predictionList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let modelData = {
+            english: null,
+            indonesian: null,
+            indoGrounding: null
+        };
+        let imageFiles = {};
+        let currentModel = null;
+        let currentImage = null;
+        
+        // Color mapping for different models
+        const modelColors = {
+            english: '#FF6B6B',
+            indonesian: '#4ECDC4', 
+            indoGrounding: '#45B7D1'
+        };
+        
+        const modelNames = {
+            english: 'English GroundingDINO',
+            indonesian: 'Indonesian GroundingDINO',
+            indoGrounding: 'Indo GroundingDINO Finetuned'
+        };
+        
+        // Handle prediction file uploads
+        document.getElementById('englishFile').addEventListener('change', (e) => handleModelFile(e, 'english'));
+        document.getElementById('indonesianFile').addEventListener('change', (e) => handleModelFile(e, 'indonesian'));
+        document.getElementById('indoGroundingFile').addEventListener('change', (e) => handleModelFile(e, 'indoGrounding'));
+        
+        // Handle images folder upload
+        document.getElementById('imagesFolder').addEventListener('change', (event) => {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+            
+            showLoading();
+            imageFiles = {};
+            
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    imageFiles[file.name] = file;
+                }
+            });
+            
+            showSuccess(`✅ Loaded ${Object.keys(imageFiles).length} images`);
+            updateInterface();
+            hideLoading();
+        });
+        
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', (event) => {
+            const searchTerm = event.target.value.toLowerCase();
+            updateImageList(searchTerm);
+        });
+        
+        // Debug mode toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const debugCheckbox = document.getElementById('debugMode');
+            if (debugCheckbox) {
+                debugCheckbox.addEventListener('change', () => {
+                    if (currentImage) {
+                        displayImage(currentImage);
+                    }
+                });
+            }
+        });
+        
+        async function handleModelFile(event, modelType) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                showLoading();
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                // Parse different prediction formats
+                modelData[modelType] = parsePredictionData(data, modelType);
+                
+                showSuccess(`✅ Loaded ${modelNames[modelType]} predictions: ${Object.keys(modelData[modelType]).length} images`);
+                updateInterface();
+            } catch (error) {
+                showError(`❌ Error loading ${modelNames[modelType]}: ${error.message}`);
+                console.error('Parsing error:', error);
+            }
+            hideLoading();
+        }
+        
+        function parsePredictionData(data, modelType) {
+            const parsed = {};
+            
+            // Handle different data structures
+            let predictions = [];
+            
+            if (data.predictions) {
+                // Format: { "predictions": [...] }
+                predictions = data.predictions;
+            } else if (Array.isArray(data)) {
+                // Format: [...]
+                predictions = data;
+            } else if (typeof data === 'object') {
+                // Format: { "image1.jpg": {...}, "image2.jpg": {...} }
+                predictions = Object.entries(data).map(([image_name, pred]) => ({
+                    image_name,
+                    ...pred
+                }));
+            }
+            
+            predictions.forEach(pred => {
+                const imageName = pred.image_name;
+                if (!imageName) return;
+                
+                // Convert to standardized format
+                const standardized = {
+                    image_name: imageName,
+                    caption: pred.caption || '',
+                    model: pred.model || modelNames[modelType],
+                    language: pred.language || modelType,
+                    detections: []
+                };
+                
+                // Parse detections
+                if (pred.boxes && pred.scores && pred.phrases) {
+                    // GroundingDINO format
+                    for (let i = 0; i < pred.boxes.length; i++) {
+                        let bbox = pred.boxes[i];
+                        
+                        // Auto-detect coordinate format
+                        let coordinateFormat = 'pixel'; // default
+                        
+                        // Check if coordinates are normalized (0-1 range)
+                        if (bbox.every(coord => coord >= 0 && coord <= 1)) {
+                            coordinateFormat = 'normalized';
+                        }
+                        // Check if it might be center format (for normalized coordinates)
+                        else if (bbox.length === 4 && bbox[2] < bbox[0] && bbox[3] < bbox[1]) {
+                            coordinateFormat = 'center_normalized';
+                        }
+                        
+                        standardized.detections.push({
+                            bbox: bbox,
+                            score: pred.scores[i],
+                            phrase: pred.phrases[i],
+                            index: i,
+                            coordinateFormat: coordinateFormat
+                        });
+                    }
+                } else if (pred.boxes) {
+                    // Alternative format
+                    pred.boxes.forEach((box, i) => {
+                        let coordinateFormat = 'pixel';
+                        if (box.every(coord => coord >= 0 && coord <= 1)) {
+                            coordinateFormat = 'normalized';
+                        }
+                        
+                        standardized.detections.push({
+                            bbox: box,
+                            score: pred.scores ? pred.scores[i] : 1.0,
+                            phrase: pred.phrases ? pred.phrases[i] : `Object ${i + 1}`,
+                            index: i,
+                            coordinateFormat: coordinateFormat
+                        });
+                    });
+                }
+                
+                parsed[imageName] = standardized;
+            });
+            
+            return parsed;
+        }
+        
+        function updateInterface() {
+            const hasModels = Object.values(modelData).some(data => data !== null);
+            const hasImages = Object.keys(imageFiles).length > 0;
+            
+            if (hasModels) {
+                document.getElementById('modelSelector').style.display = 'block';
+                updateModelTabs();
+            }
+            
+            if (hasModels && hasImages) {
+                document.getElementById('mainInterface').style.display = 'grid';
+                updateStats();
+                updateImageList();
+            }
+        }
+        
+        function updateModelTabs() {
+            const tabsContainer = document.getElementById('modelTabs');
+            const infoContainer = document.getElementById('modelInfo');
+            
+            tabsContainer.innerHTML = '';
+            
+            Object.entries(modelData).forEach(([modelType, data]) => {
+                if (data === null) return;
+                
+                const tab = document.createElement('div');
+                tab.className = 'model-tab';
+                tab.textContent = modelNames[modelType];
+                tab.style.borderColor = modelColors[modelType];
+                
+                tab.addEventListener('click', () => selectModel(modelType));
+                tabsContainer.appendChild(tab);
+                
+                // Select first available model
+                if (!currentModel) {
+                    selectModel(modelType);
+                }
+            });
+        }
+        
+        function selectModel(modelType) {
+            currentModel = modelType;
+            
+            // Update tab appearance
+            document.querySelectorAll('.model-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update model info
+            const data = modelData[modelType];
+            const info = document.getElementById('modelInfo');
+            
+            info.innerHTML = `
+                <h4>${modelNames[modelType]}</h4>
+                <div class="stat-item">
+                    <span>Images with predictions:</span>
+                    <span class="stat-value">${Object.keys(data).length}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total detections:</span>
+                    <span class="stat-value">${getTotalDetections(data)}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Average confidence:</span>
+                    <span class="stat-value">${getAverageConfidence(data).toFixed(1)}%</span>
+                </div>
+            `;
+            
+            // Update image list and current image
+            updateImageList();
+            if (currentImage) {
+                displayImage(currentImage);
+                displayPredictions(currentImage);
+            }
+        }
+        
+        function getTotalDetections(data) {
+            return Object.values(data).reduce((total, pred) => total + pred.detections.length, 0);
+        }
+        
+        function getAverageConfidence(data) {
+            const allScores = [];
+            Object.values(data).forEach(pred => {
+                pred.detections.forEach(det => allScores.push(det.score));
+            });
+            return allScores.length > 0 ? (allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100 : 0;
+        }
+        
+        function updateStats() {
+            const totalImages = Object.keys(imageFiles).length;
+            let predictedImages = 0;
+            
+            if (currentModel && modelData[currentModel]) {
+                const modelPredictions = modelData[currentModel];
+                predictedImages = Object.keys(imageFiles).filter(filename => 
+                    modelPredictions[filename]
+                ).length;
+            }
+            
+            document.getElementById('totalImages').textContent = totalImages;
+            document.getElementById('predictedImages').textContent = predictedImages;
+        }
+        
+        function updateImageList(searchTerm = '') {
+            const imageList = document.getElementById('imageList');
+            imageList.innerHTML = '';
+            
+            Object.keys(imageFiles)
+                .filter(filename => filename.toLowerCase().includes(searchTerm))
+                .sort()
+                .forEach(filename => {
+                    const item = document.createElement('div');
+                    item.className = 'image-item';
+                    
+                    const hasPrediction = currentModel && modelData[currentModel] && modelData[currentModel][filename];
+                    const icon = hasPrediction ? '🎯' : '📷';
+                    
+                    item.innerHTML = `
+                        <div class="image-icon">${icon}</div>
+                        <div>
+                            <div style="font-weight: bold;">${filename}</div>
+                            <div style="font-size: 0.8em; color: #666;">
+                                ${hasPrediction ? `${getPredictionCount(filename)} detections` : 'No predictions'}
+                            </div>
+                        </div>
+                    `;
+                    
+                    item.addEventListener('click', () => selectImage(filename));
+                    imageList.appendChild(item);
+                });
+        }
+        
+        function getPredictionCount(filename) {
+            if (!currentModel || !modelData[currentModel] || !modelData[currentModel][filename]) return 0;
+            return modelData[currentModel][filename].detections.length;
+        }
+        
+        function selectImage(filename) {
+            // Update selection UI
+            document.querySelectorAll('.image-item').forEach(item => item.classList.remove('selected'));
+            event.target.closest('.image-item').classList.add('selected');
+            
+            currentImage = filename;
+            displayImage(filename);
+            displayPredictions(filename);
+        }
+        
+        async function displayImage(filename) {
+            const container = document.getElementById('imageContainer');
+            container.innerHTML = '';
+            container.className = `image-container model-${currentModel}`;
+            
+            const file = imageFiles[filename];
+            if (!file) return;
+            
+            try {
+                const imageUrl = URL.createObjectURL(file);
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.className = 'main-image';
+                img.alt = filename;
+                
+                // Improve image loading quality
+                img.style.imageRendering = 'auto';
+                img.style.imageRendering = '-webkit-optimize-contrast';
+                img.style.imageRendering = 'optimizeQuality';
+                img.style.msInterpolationMode = 'bicubic';
+                
+                // Wait for image to load completely
+                img.onload = () => {
+                    // Check if image is too small and needs upscaling
+                    const containerRect = container.getBoundingClientRect();
+                    const scaleRatio = Math.min(
+                        containerRect.width / img.naturalWidth,
+                        containerRect.height / img.naturalHeight
+                    );
+                    
+                    // If upscaling significantly, use different rendering
+                    if (scaleRatio > 1.5) {
+                        img.style.imageRendering = 'crisp-edges';
+                    } else if (scaleRatio < 0.5) {
+                        img.style.imageRendering = 'optimizeQuality';
+                    }
+                    
+                    container.appendChild(img);
+                    
+                    // Small delay to ensure image is fully rendered before drawing boxes
+                    setTimeout(() => {
+                        displayBoundingBoxes(filename, img);
+                    }, 50);
+                };
+                
+                img.onerror = () => {
+                    container.innerHTML = '<div class="error">Failed to load image</div>';
+                };
+                
+            } catch (error) {
+                showError(`❌ Error displaying image: ${error.message}`);
+            }
+        }
+        
+        function displayBoundingBoxes(filename, imgElement) {
+            if (!currentModel || !modelData[currentModel] || !modelData[currentModel][filename]) return;
+            
+            const prediction = modelData[currentModel][filename];
+            const debugMode = document.getElementById('debugMode')?.checked || false;
+            
+            // Clear existing boxes
+            document.querySelectorAll('.bounding-box').forEach(box => box.remove());
+            
+            prediction.detections.forEach((detection, index) => {
+                const imgRect = imgElement.getBoundingClientRect();
+                const containerRect = imgElement.parentElement.getBoundingClientRect();
+                
+                // Calculate relative position within container
+                const imgX = imgRect.left - containerRect.left;
+                const imgY = imgRect.top - containerRect.top;
+                
+                let bbox = detection.bbox;
+                if (!bbox || bbox.length !== 4) return;
+                
+                // Debug logging only if debug mode is enabled
+                if (debugMode) {
+                    console.log(`\n=== Detection ${index} for ${filename} ===`);
+                    console.log('Original bbox:', bbox);
+                    console.log('Coordinate format:', detection.coordinateFormat);
+                    console.log('Image natural size:', `${imgElement.naturalWidth}x${imgElement.naturalHeight}`);
+                    console.log('Image display size:', `${imgRect.width}x${imgRect.height}`);
+                }
+                
+                let finalX, finalY, finalW, finalH;
+                
+                // Handle different coordinate formats
+                if (detection.coordinateFormat === 'normalized') {
+                    // Normalized coordinates [x1, y1, x2, y2] or [cx, cy, w, h] in 0-1 range
+                    if (bbox[2] > bbox[0] && bbox[3] > bbox[1]) {
+                        // [x1, y1, x2, y2] format
+                        finalX = bbox[0] * imgRect.width;
+                        finalY = bbox[1] * imgRect.height;
+                        finalW = (bbox[2] - bbox[0]) * imgRect.width;
+                        finalH = (bbox[3] - bbox[1]) * imgRect.height;
+                    } else {
+                        // [cx, cy, w, h] format (center coordinates)
+                        const centerX = bbox[0] * imgRect.width;
+                        const centerY = bbox[1] * imgRect.height;
+                        finalW = bbox[2] * imgRect.width;
+                        finalH = bbox[3] * imgRect.height;
+                        finalX = centerX - finalW / 2;
+                        finalY = centerY - finalH / 2;
+                    }
+                } else {
+                    // Pixel coordinates [x1, y1, x2, y2]
+                    const scaleX = imgRect.width / imgElement.naturalWidth;
+                    const scaleY = imgRect.height / imgElement.naturalHeight;
+                    
+                    let x1 = bbox[0];
+                    let y1 = bbox[1];
+                    let x2 = bbox[2];
+                    let y2 = bbox[3];
+                    
+                    // Ensure x1,y1 is top-left and x2,y2 is bottom-right
+                    const minX = Math.min(x1, x2);
+                    const minY = Math.min(y1, y2);
+                    const maxX = Math.max(x1, x2);
+                    const maxY = Math.max(y1, y2);
+                    
+                    finalX = minX * scaleX;
+                    finalY = minY * scaleY;
+                    finalW = (maxX - minX) * scaleX;
+                    finalH = (maxY - minY) * scaleY;
+                }
+                
+                // Round to exact pixel values to prevent sub-pixel rendering blur
+                finalX = Math.round(Math.max(0, Math.min(finalX, imgRect.width - 1)));
+                finalY = Math.round(Math.max(0, Math.min(finalY, imgRect.height - 1)));
+                finalW = Math.round(Math.max(2, Math.min(finalW, imgRect.width - finalX)));
+                finalH = Math.round(Math.max(2, Math.min(finalH, imgRect.height - finalY)));
+                
+                if (debugMode) {
+                    console.log('Final bbox (rounded):', `x=${finalX}, y=${finalY}, w=${finalW}, h=${finalH}`);
+                }
+                
+                // Create bounding box element
+                const boxEl = document.createElement('div');
+                boxEl.className = 'bounding-box';
+                
+                const color = modelColors[currentModel];
+                
+                // Use exact pixel positioning
+                boxEl.style.left = `${Math.round(imgX + finalX)}px`;
+                boxEl.style.top = `${Math.round(imgY + finalY)}px`;
+                boxEl.style.width = `${finalW}px`;
+                boxEl.style.height = `${finalH}px`;
+                boxEl.style.borderColor = color;
+                
+                // Create label
+                const labelEl = document.createElement('div');
+                labelEl.className = 'box-label';
+                labelEl.style.backgroundColor = color;
+                labelEl.textContent = `${detection.phrase} (${Math.round(detection.score * 100)}%)`;
+                
+                boxEl.appendChild(labelEl);
+                imgElement.parentElement.appendChild(boxEl);
+            });
+        }
+        
+        function displayPredictions(filename) {
+            const predictionList = document.getElementById('predictionList');
+            const captionDisplay = document.getElementById('captionDisplay');
+            const captionText = document.getElementById('captionText');
+            const statsContainer = document.getElementById('predictionStats');
+            
+            if (!currentModel || !modelData[currentModel] || !modelData[currentModel][filename]) {
+                predictionList.innerHTML = '<div class="placeholder">No predictions found for this image</div>';
+                captionDisplay.style.display = 'none';
+                return;
+            }
+            
+            const prediction = modelData[currentModel][filename];
+            
+            // Display caption
+            if (prediction.caption) {
+                captionText.textContent = prediction.caption;
+                captionDisplay.style.display = 'block';
+            } else {
+                captionDisplay.style.display = 'none';
+            }
+            
+            // Update stats
+            const avgConf = prediction.detections.length > 0 ? 
+                prediction.detections.reduce((sum, det) => sum + det.score, 0) / prediction.detections.length * 100 : 0;
+            
+            // Get coordinate format from first detection
+            const coordFormat = prediction.detections.length > 0 ? 
+                prediction.detections[0].coordinateFormat || 'unknown' : '-';
+            
+            document.getElementById('currentDetections').textContent = prediction.detections.length;
+            document.getElementById('avgConfidence').textContent = `${avgConf.toFixed(1)}%`;
+            document.getElementById('coordFormat').textContent = coordFormat;
+            
+            // Display detections
+            predictionList.innerHTML = '';
+            
+            prediction.detections.forEach((detection, index) => {
+                const item = document.createElement('div');
+                item.className = `prediction-item color-${currentModel}`;
+                
+                const color = modelColors[currentModel];
+                item.style.borderLeftColor = color;
+                
+                const confidencePercent = Math.round(detection.score * 100);
+                
+                item.innerHTML = `
+                    <div class="prediction-label" style="color: ${color};">
+                        ${detection.phrase}
+                    </div>
+                    <div class="prediction-score">
+                        Confidence: ${confidencePercent}%
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${confidencePercent}%; background: ${color};"></div>
+                        </div>
+                    </div>
+                    <div class="prediction-coords">
+                        BBox: [${detection.bbox.map(v => Math.round(v)).join(', ')}]
+                        <div style="font-size: 0.7em; color: #aaa;">Format: ${detection.coordinateFormat}</div>
+                    </div>
+                `;
+                
+                predictionList.appendChild(item);
+            });
+        }
+        
+        function showLoading() {
+            document.getElementById('loadingMessage').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingMessage').style.display = 'none';
+        }
+        
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => errorEl.style.display = 'none', 5000);
+        }
+        
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            setTimeout(() => successEl.style.display = 'none', 3000);
+        }
+        
+        // Handle window resize for bounding boxes
+        window.addEventListener('resize', () => {
+            if (currentImage) {
+                setTimeout(() => {
+                    const img = document.querySelector('.main-image');
+                    if (img) displayBoundingBoxes(currentImage, img);
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>
